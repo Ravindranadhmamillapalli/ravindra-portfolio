@@ -1,9 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import gsap from "gsap";
 import {
   useEffect,
   useId,
+  useLayoutEffect,
+  useRef,
   useState,
   useTransition,
   type KeyboardEvent,
@@ -21,34 +25,100 @@ import {
   work,
   type TabId,
 } from "@/data/portfolio";
+import { useGsapTab } from "@/lib/useGsapTab";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+import TypeText from "@/components/TypeText";
 
 const Scene3D = dynamic(() => import("@/components/Scene3D"), {
   ssr: false,
   loading: () => <div className="scene-fallback" aria-hidden />,
 });
 
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return reduced;
+const WelcomeIntro = dynamic(() => import("@/components/WelcomeIntro"), {
+  ssr: false,
+});
+
+function isTabId(value: string): value is TabId {
+  return tabs.some((tab) => tab.id === value);
 }
 
 export default function Portfolio() {
   const [activeTab, setActiveTab] = useState<TabId>("about");
-  const [openNote, setOpenNote] = useState<string | null>(notes[0].title);
+  const [introDone, setIntroDone] = useState(false);
+  const [playEntrance, setPlayEntrance] = useState(true);
+  const [showCanvas, setShowCanvas] = useState(false);
   const [isPending, startTransition] = useTransition();
   const reducedMotion = usePrefersReducedMotion();
+  const panelRef = useGsapTab(activeTab, reducedMotion, introDone);
+  const shellRef = useRef<HTMLDivElement>(null);
   const tablistId = useId();
   const current = tabs.find((t) => t.id === activeTab) ?? tabs[0];
+  const featuredNote = notes[0];
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 900px)");
+    const update = () => setShowCanvas(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  // Park the halves off-canvas while the intro is still covering the page,
+  // so the reveal never shows the settled layout first.
+  useLayoutEffect(() => {
+    if (introDone || reducedMotion || !playEntrance) return;
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const rail = shell.querySelector(".rail");
+    const wrap = shell.querySelector(".panel-wrap");
+    const topbar = shell.querySelector(".topbar");
+
+    gsap.set(rail, { x: -220, opacity: 0 });
+    gsap.set(wrap, { x: 220, opacity: 0 });
+    gsap.set(topbar, { y: -24, opacity: 0 });
+
+    return () => {
+      gsap.set([rail, wrap, topbar], { clearProps: "all" });
+    };
+  }, [introDone, reducedMotion, playEntrance]);
+
+  useLayoutEffect(() => {
+    if (!introDone || reducedMotion || !playEntrance) return;
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        delay: 0.25,
+        defaults: { duration: 1.8, ease: "power2.out" },
+      });
+      tl.fromTo(".rail", { x: -220, opacity: 0 }, { x: 0, opacity: 1 }, 0)
+        .fromTo(".panel-wrap", { x: 220, opacity: 0 }, { x: 0, opacity: 1 }, 0)
+        .fromTo(
+          ".topbar",
+          { y: -24, opacity: 0 },
+          { y: 0, opacity: 1, duration: 1.1 },
+          0.3,
+        );
+    }, shell);
+
+    return () => ctx.revert();
+  }, [introDone, reducedMotion, playEntrance]);
+
+  useEffect(() => {
+    const applyHash = () => {
+      const id = window.location.hash.replace("#", "");
+      if (isTabId(id)) setActiveTab(id);
+    };
+    applyHash();
+    window.addEventListener("hashchange", applyHash);
+    return () => window.removeEventListener("hashchange", applyHash);
+  }, []);
 
   const selectTab = (id: TabId) => {
     startTransition(() => setActiveTab(id));
+    window.history.replaceState(null, "", `#${id}`);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -73,12 +143,25 @@ export default function Portfolio() {
       className="portfolio"
       style={{ ["--tab-accent" as string]: current.accent }}
     >
+      <WelcomeIntro
+        reducedMotion={reducedMotion}
+        onDone={(played) => {
+          setPlayEntrance(played);
+          setIntroDone(true);
+        }}
+      />
       <div className="atmosphere" aria-hidden />
-      <div className="scene-stage">
-        <Scene3D activeTab={activeTab} reducedMotion={reducedMotion} />
-      </div>
+      {showCanvas && (
+        <div
+          className={
+            activeTab === "projects" ? "scene-stage is-projects" : "scene-stage"
+          }
+        >
+          <Scene3D activeTab={activeTab} reducedMotion={reducedMotion} />
+        </div>
+      )}
 
-      <div className="shell">
+      <div className="shell" ref={shellRef}>
         <header className="topbar">
           <p className="brand">Ravindra Mamillapalli</p>
           <nav className="topbar-links">
@@ -92,9 +175,20 @@ export default function Portfolio() {
         <div className="layout">
           <aside className="rail">
             <section className="hero">
-              <p className="kicker">{hero.kicker}</p>
-              <h1>{hero.name}</h1>
-              <p className="lead">{hero.lead}</p>
+              <p className="kicker">
+                <TypeText text={hero.kicker} start={introDone} cps={90} />
+              </p>
+              <h1>
+                <TypeText
+                  text={hero.name}
+                  start={introDone}
+                  cps={26}
+                  delay={0.35}
+                />
+              </h1>
+              <p className="lead">
+                {hero.lead}
+              </p>
               <dl className="stats">
                 {hero.stats.map((s) => (
                   <div key={s.label}>
@@ -135,8 +229,10 @@ export default function Portfolio() {
             <p className="tab-caption">{current.caption}</p>
           </aside>
 
+          <div className="panel-wrap">
           <div
             key={activeTab}
+            ref={panelRef}
             className={`panel-stage${isPending ? " is-pending" : ""}`}
             role="tabpanel"
             id={`panel-${activeTab}`}
@@ -146,7 +242,9 @@ export default function Portfolio() {
             {activeTab === "about" && (
               <div className="stack">
                 <article className="panel">
-                  <h2>{about.title}</h2>
+                  <h2>
+                    <TypeText text={about.title} />
+                  </h2>
                   {about.paragraphs.map((p) => (
                     <p key={p.slice(0, 24)} className="body-text">
                       {p}
@@ -179,13 +277,44 @@ export default function Portfolio() {
                     </div>
                   </article>
                 </div>
+
+                <article className="panel">
+                  <h3 className="panel-title">Education & certification</h3>
+                  <div className="education-list">
+                    {education.map((item) => (
+                      <div key={item.title} className="education-item">
+                        <div className="job-head">
+                          <h4>{item.title}</h4>
+                          <span>{item.when}</span>
+                        </div>
+                        <p className="company">{item.place}</p>
+                        <p className="body-text">{item.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+
+                <article className="panel featured-note">
+                  <div className="note-meta">
+                    <span>Featured note</span>
+                    <span>{featuredNote.date}</span>
+                    <span>{featuredNote.read}</span>
+                  </div>
+                  <h3>{featuredNote.title}</h3>
+                  <p className="body-text">{featuredNote.body}</p>
+                  <Link href={`/notes/${featuredNote.slug}`} className="text-link">
+                    Read the full note
+                  </Link>
+                </article>
               </div>
             )}
 
             {activeTab === "work" && (
               <div className="stack">
                 <article className="panel">
-                  <h2>Where the work happens</h2>
+                  <h2>
+                    <TypeText text="Where the work happens" />
+                  </h2>
                   <p className="body-text">
                     Three years of product delivery in education and enterprise
                     systems — mostly owning features from ticket to release.
@@ -195,7 +324,9 @@ export default function Portfolio() {
                   {work.map((job) => (
                     <article key={job.role} className="panel job">
                       <div className="job-head">
-                        <h3>{job.role}</h3>
+                        <h3>
+                          <TypeText text={job.role} cps={30} />
+                        </h3>
                         <span>{job.when}</span>
                       </div>
                       <p className="company">
@@ -221,20 +352,31 @@ export default function Portfolio() {
             {activeTab === "projects" && (
               <div className="stack">
                 <article className="panel">
-                  <h2>Selected work</h2>
+                  <h2>
+                    <TypeText text="Selected work" />
+                  </h2>
                   <p className="body-text">
                     Six systems across realtime processing, education platforms,
                     payments, maps, and internal tooling.
                   </p>
                 </article>
-                <div className="grid-2">
-                  {projects.map((p) => (
-                    <article key={p.title} className="panel project">
+                <div className="project-zigzag">
+                  {projects.map((p, i) => (
+                    <article
+                      key={p.title}
+                      className={
+                        i % 2 === 1
+                          ? "panel project is-right"
+                          : "panel project is-left"
+                      }
+                    >
                       <div className="project-head">
                         <span className="tag">{p.tag}</span>
                         <span className="year">{p.year}</span>
                       </div>
-                      <h3>{p.title}</h3>
+                      <h3>
+                        <TypeText text={p.title} cps={30} />
+                      </h3>
                       <p className="role-line">{p.role}</p>
                       <p className="body-text">{p.blurb}</p>
                       <ul className="bullets tight">
@@ -247,6 +389,9 @@ export default function Portfolio() {
                           <li key={t}>{t}</li>
                         ))}
                       </ul>
+                      <div className="project-actions">
+                        <span className="project-access">{p.access}</span>
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -256,7 +401,9 @@ export default function Portfolio() {
             {activeTab === "skills" && (
               <div className="stack">
                 <article className="panel">
-                  <h2>What I reach for</h2>
+                  <h2>
+                    <TypeText text="What I reach for" />
+                  </h2>
                   <div className="skill-list">
                     {skills.map((s) => (
                       <div key={s.group} className="skill-row">
@@ -299,73 +446,12 @@ export default function Portfolio() {
               </div>
             )}
 
-            {activeTab === "notes" && (
-              <div className="stack">
-                <article className="panel">
-                  <h2>Notes from production work</h2>
-                  <p className="body-text">
-                    Short posts on what shipping actually taught me. Open one to
-                    read the whole note.
-                  </p>
-                </article>
-                <div className="note-list">
-                  {notes.map((n) => {
-                    const open = openNote === n.title;
-                    return (
-                      <article
-                        key={n.title}
-                        className={open ? "panel note is-open" : "panel note"}
-                      >
-                        <div className="note-meta">
-                          <span>{n.date}</span>
-                          <span>{n.topic}</span>
-                          <span>{n.read}</span>
-                        </div>
-                        <h3>{n.title}</h3>
-                        {open && <p className="body-text">{n.body}</p>}
-                        <button
-                          type="button"
-                          className="note-toggle"
-                          aria-expanded={open}
-                          onClick={() => setOpenNote(open ? null : n.title)}
-                        >
-                          {open ? "Close note" : "Read note"}
-                        </button>
-                      </article>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {activeTab === "education" && (
-              <div className="stack">
-                <article className="panel">
-                  <h2>Education and certification</h2>
-                  <p className="body-text">
-                    Computer science degrees plus focused full-stack training
-                    before moving into product work.
-                  </p>
-                </article>
-                <div className="timeline">
-                  {education.map((e) => (
-                    <article key={e.title} className="panel job">
-                      <div className="job-head">
-                        <h3>{e.title}</h3>
-                        <span>{e.when}</span>
-                      </div>
-                      <p className="company">{e.place}</p>
-                      <p className="body-text">{e.detail}</p>
-                    </article>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {activeTab === "contact" && (
               <div className="stack">
                 <article className="panel">
-                  <h2>{contact.title}</h2>
+                  <h2>
+                    <TypeText text={contact.title} />
+                  </h2>
                   <p className="body-text">{contact.lead}</p>
                   <div className="contact-links">
                     <a href={`mailto:${contact.email}`}>{contact.email}</a>
@@ -400,6 +486,7 @@ export default function Portfolio() {
                 </article>
               </div>
             )}
+          </div>
           </div>
         </div>
 
