@@ -25,7 +25,7 @@ import {
   work,
   type TabId,
 } from "@/data/portfolio";
-import { useGsapTab } from "@/lib/useGsapTab";
+import { DESKTOP_QUERY, MOBILE_QUERY, useGsapTab } from "@/lib/useGsapTab";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 import TypeText from "@/components/TypeText";
 
@@ -63,8 +63,8 @@ export default function Portfolio() {
     return () => media.removeEventListener("change", update);
   }, []);
 
-  // Park the halves off-canvas while the intro is still covering the page,
-  // so the reveal never shows the settled layout first.
+  // Park the shell out of position while the intro still covers the page, so
+  // the reveal never shows the settled layout first.
   useLayoutEffect(() => {
     if (introDone || reducedMotion || !playEntrance) return;
     const shell = shellRef.current;
@@ -73,9 +73,10 @@ export default function Portfolio() {
     const rail = shell.querySelector(".rail");
     const wrap = shell.querySelector(".panel-wrap");
     const topbar = shell.querySelector(".topbar");
+    const sideways = window.matchMedia(DESKTOP_QUERY).matches;
 
-    gsap.set(rail, { x: -220, opacity: 0 });
-    gsap.set(wrap, { x: 220, opacity: 0 });
+    gsap.set(rail, sideways ? { x: -220, opacity: 0 } : { y: 44, opacity: 0 });
+    gsap.set(wrap, sideways ? { x: 220, opacity: 0 } : { y: 72, opacity: 0 });
     gsap.set(topbar, { y: -24, opacity: 0 });
 
     return () => {
@@ -88,7 +89,9 @@ export default function Portfolio() {
     const shell = shellRef.current;
     if (!shell) return;
 
-    const ctx = gsap.context(() => {
+    const mm = gsap.matchMedia();
+
+    mm.add(DESKTOP_QUERY, () => {
       const tl = gsap.timeline({
         delay: 0.25,
         defaults: { duration: 1.8, ease: "power2.out" },
@@ -103,8 +106,53 @@ export default function Portfolio() {
         );
     }, shell);
 
-    return () => ctx.revert();
+    // The rail and panel stack vertically on a phone, so the entrance rises
+    // instead of sliding in from the sides.
+    mm.add(MOBILE_QUERY, () => {
+      const tl = gsap.timeline({
+        delay: 0.12,
+        defaults: { duration: 0.8, ease: "power3.out" },
+      });
+      tl.fromTo(".topbar", { y: -24, opacity: 0 }, { y: 0, opacity: 1 }, 0)
+        .fromTo(
+          ".rail",
+          { y: 44, opacity: 0 },
+          { y: 0, opacity: 1, clearProps: "transform" },
+          0.1,
+        )
+        .fromTo(
+          ".hero > *",
+          { y: 26, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.6, stagger: 0.08 },
+          0.2,
+        )
+        .fromTo(
+          ".tab",
+          { y: 16, opacity: 0, scale: 0.9 },
+          { y: 0, opacity: 1, scale: 1, duration: 0.4, stagger: 0.05 },
+          0.45,
+        )
+        .fromTo(
+          ".panel-wrap",
+          { y: 72, opacity: 0 },
+          { y: 0, opacity: 1, clearProps: "transform" },
+          0.5,
+        );
+    }, shell);
+
+    return () => mm.revert();
   }, [introDone, reducedMotion, playEntrance]);
+
+  // Keep the active pill visible in the scrolling mobile tab strip.
+  useEffect(() => {
+    if (!window.matchMedia(MOBILE_QUERY).matches) return;
+    const button = document.getElementById(`tab-${activeTab}`);
+    button?.scrollIntoView({
+      behavior: reducedMotion ? "auto" : "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [activeTab, reducedMotion]);
 
   useEffect(() => {
     const applyHash = () => {
