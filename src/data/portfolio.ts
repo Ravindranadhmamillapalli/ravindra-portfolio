@@ -3,8 +3,6 @@ export type TabId =
   | "work"
   | "projects"
   | "skills"
-  | "notes"
-  | "education"
   | "contact";
 
 export type TabDef = {
@@ -45,20 +43,6 @@ export const tabs: TabDef[] = [
     caption: "Stack, depth, and core concepts",
   },
   {
-    id: "notes",
-    label: "Notes",
-    accent: "#93c5fd",
-    camera: [-1.1, 0.3, 5.6],
-    caption: "Writing from production work",
-  },
-  {
-    id: "education",
-    label: "Education",
-    accent: "#f0abfc",
-    camera: [0.9, -0.2, 5.9],
-    caption: "Degrees and certifications",
-  },
-  {
     id: "contact",
     label: "Contact",
     accent: "#e8c98a",
@@ -76,7 +60,6 @@ export const hero = {
     { value: "3+", label: "Years shipping" },
     { value: "6", label: "Products delivered" },
     { value: "5", label: "Languages in rotation" },
-    { value: "1M+", label: "Records reported on" },
   ],
 };
 
@@ -163,6 +146,7 @@ export const projects = [
       "Event history persisted to MySQL for audit and review",
     ],
     tech: ["Golang", "Node.js", "REST", "MySQL", "WebSockets"],
+    access: "Private company system",
   },
   {
     tag: "Education platform",
@@ -177,6 +161,7 @@ export const projects = [
       "Fee lifecycle from invoice to receipt to reconciliation",
     ],
     tech: ["React", "Angular", "Golang", "MySQL", "REST"],
+    access: "Private company system",
   },
   {
     tag: "Maps / reporting",
@@ -191,6 +176,7 @@ export const projects = [
       "Export paths for the reports finance actually reads",
     ],
     tech: ["Google Maps", "GeoJSON", "JavaScript", "MySQL"],
+    access: "Private company system",
   },
   {
     tag: "Payments",
@@ -205,6 +191,7 @@ export const projects = [
       "Grievance threads routed to the right campus staff",
     ],
     tech: ["React", "Razorpay", "Node.js", "REST", "MySQL"],
+    access: "Private company system",
   },
   {
     tag: "HR / internal tools",
@@ -219,6 +206,7 @@ export const projects = [
       "SQL reports for attendance and leave balances",
     ],
     tech: ["Angular", "Java", "Spring Boot", "SQL"],
+    access: "Private company system",
   },
   {
     tag: "Serverless / side project",
@@ -233,6 +221,7 @@ export const projects = [
       "OpenSearch indexing for locality search",
     ],
     tech: ["Next.js", "AWS Lambda", "DynamoDB", "OpenSearch"],
+    access: "Private side project",
   },
 ];
 
@@ -304,6 +293,7 @@ export const concepts = [
 
 export const notes = [
   {
+    slug: "what-full-stack-means-on-a-real-team",
     date: "Aug 11, 2026",
     topic: "Career",
     read: "4 min",
@@ -312,6 +302,7 @@ export const notes = [
       "On paper it sounds like a checklist of frameworks. In practice it is a responsibility model: connect the screen to the contract, the contract to the query, and the query to something operators can trust. A single week might include an Angular form, a Node endpoint, a MySQL index change, a Razorpay edge case, and a dashboard filter that only makes sense after talking to finance.",
   },
   {
+    slug: "building-dashboards-people-open-twice",
     date: "Jul 28, 2026",
     topic: "Product",
     read: "3 min",
@@ -320,6 +311,7 @@ export const notes = [
       "Charts are easy; decision-ready filters and fast SQL are the real work. The dashboards that stick share clear roles, boring defaults, business-shaped filters, and queries that stay fast. CFO and MIS work taught me to optimize for the two-minute question, not for more widgets.",
   },
   {
+    slug: "rest-apis-across-java-node-and-golang",
     date: "Jun 18, 2026",
     topic: "Backend",
     read: "3 min",
@@ -328,6 +320,7 @@ export const notes = [
       "Same resource, three runtimes — the contract matters more than the logo. Validation, status codes, pagination, auth boundaries, and searchable logs are required in every language. A stable contract beats a clever one when Angular and React clients depend on it.",
   },
   {
+    slug: "razorpay-in-education-trust-is-the-feature",
     date: "May 9, 2026",
     topic: "Payments",
     read: "3 min",
@@ -336,6 +329,7 @@ export const notes = [
       "A payment screen in a parent app is systems design with an SDK attached. Success and failure states, fee reconciliation, retry paths, and calm copy matter as much as the gateway call itself. Parents need a receipt they can show tomorrow.",
   },
   {
+    slug: "maps-geojson-and-reports-that-respect-place",
     date: "Apr 22, 2026",
     topic: "Maps",
     read: "3 min",
@@ -344,6 +338,7 @@ export const notes = [
       "Geography is a filter language. Markers and radius selection only help if the query behind them stays honest and permissions hold as data grows. Otherwise you have shipped a pretty picture of the wrong subset.",
   },
   {
+    slug: "streaming-motion-events-and-calm-operators",
     date: "Mar 14, 2026",
     topic: "Realtime",
     read: "3 min",

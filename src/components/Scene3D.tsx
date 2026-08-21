@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float, MeshDistortMaterial, Stars } from "@react-three/drei";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { TabId } from "@/data/portfolio";
 import { tabs } from "@/data/portfolio";
@@ -123,57 +123,6 @@ function TabMeshes({
         </Float>
       )}
 
-      {activeTab === "notes" && (
-        <group>
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Float
-              key={i}
-              speed={reducedMotion ? 0 : 0.9 + i * 0.1}
-              floatIntensity={reducedMotion ? 0 : 0.55}
-            >
-              <mesh
-                position={[(i % 3) * 0.85 - 0.85, Math.floor(i / 3) * 0.7 - 0.7, (i % 2) * 0.5]}
-                rotation={[0.15, i * 0.3, 0.05]}
-              >
-                <boxGeometry args={[1.05, 0.72, 0.035]} />
-                <meshStandardMaterial
-                  color={i % 3 === 0 ? accent : "#e8f2ed"}
-                  roughness={0.45}
-                  metalness={0.25}
-                />
-              </mesh>
-            </Float>
-          ))}
-        </group>
-      )}
-
-      {activeTab === "education" && (
-        <group>
-          <Float speed={reducedMotion ? 0 : 1} floatIntensity={reducedMotion ? 0 : 0.6}>
-            <mesh rotation={[0, 0.4, 0]} position={[0, 0.35, 0]}>
-              <coneGeometry args={[1.25, 0.42, 4]} />
-              <meshStandardMaterial color={accent} roughness={0.3} metalness={0.6} />
-            </mesh>
-            <mesh position={[0, 0.08, 0]}>
-              <boxGeometry args={[1.05, 0.12, 1.05]} />
-              <meshStandardMaterial color="#e8f2ed" roughness={0.4} metalness={0.35} />
-            </mesh>
-          </Float>
-          {[0, 1, 2].map((i) => (
-            <Float
-              key={i}
-              speed={reducedMotion ? 0 : 1.1 + i * 0.2}
-              floatIntensity={reducedMotion ? 0 : 0.7}
-            >
-              <mesh position={[Math.cos(i * 2.1) * 1.9, -0.9 + i * 0.35, Math.sin(i * 2.1) * 1.4]}>
-                <torusGeometry args={[0.3, 0.08, 16, 48]} />
-                <meshStandardMaterial color={accent} roughness={0.3} metalness={0.55} />
-              </mesh>
-            </Float>
-          ))}
-        </group>
-      )}
-
       {activeTab === "contact" && (
         <Float speed={reducedMotion ? 0 : 1.3} floatIntensity={reducedMotion ? 0 : 1}>
           <mesh scale={1.4}>
@@ -193,9 +142,19 @@ function TabMeshes({
 }
 
 export default function Scene3D({ activeTab, reducedMotion = false }: Scene3DProps) {
+  const [pageVisible, setPageVisible] = useState(true);
+
+  useEffect(() => {
+    const update = () => setPageVisible(document.visibilityState === "visible");
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
+
   return (
     <Canvas
       className="scene-canvas"
+      frameloop={pageVisible && !reducedMotion ? "always" : "demand"}
       dpr={[1, 1.75]}
       camera={{ position: [0, 0.4, 5.2], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
