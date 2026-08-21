@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Fraunces, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -19,7 +20,11 @@ export const metadata: Metadata = {
     "Portfolio of Ravindra Nadh Mamillapalli — full stack developer building web apps, APIs, dashboards, and product systems.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
   return (
     <html
       lang="en"
