@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Fraunces, Outfit } from "next/font/google";
 import { contact, hero } from "@/data/portfolio";
+import Providers from "@/components/Providers";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -56,6 +57,9 @@ export const metadata: Metadata = {
     title,
     description,
   },
+  verification: {
+    google: "ctUYLIeZ_2QwClU0bXJAaD6qDlOrmbXW46YXAmQ8i2A",
+  },
 };
 
 const personJsonLd = {
@@ -90,7 +94,7 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
         />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
