@@ -27,6 +27,7 @@ import {
 } from "@/data/portfolio";
 import { DESKTOP_QUERY, MOBILE_QUERY, useGsapTab } from "@/lib/useGsapTab";
 import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+import AuthMenu from "@/components/AuthMenu";
 import TypeText from "@/components/TypeText";
 
 const Scene3D = dynamic(() => import("@/components/Scene3D"), {
@@ -217,6 +218,7 @@ export default function Portfolio() {
             <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">
               LinkedIn
             </a>
+            <AuthMenu />
           </nav>
         </header>
 
